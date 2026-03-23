@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Список гостей</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream: #f9f5ef;
+  --gold: #b8956a;
+  --gold-light: #d4b48a;
+  --dark: #2c2416;
+  --mid: #6b5a3e;
+  --border: rgba(184,149,106,0.25);
+  --white: #ffffff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--cream); font-family: 'Jost', sans-serif; color: var(--dark); min-height: 100vh; }
+
+.bg { position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image: radial-gradient(circle at 15% 15%, rgba(184,149,106,0.07) 0%, transparent 50%),
+                    radial-gradient(circle at 85% 85%, rgba(184,149,106,0.05) 0%, transparent 50%); }
+
+.page { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+
+header { text-align: center; margin-bottom: 2.5rem; }
+.ornament { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 1.25rem; }
+.ornament-line { flex: 1; max-width: 70px; height: 0.5px; background: var(--gold-light); }
+.ornament-diamond { width: 5px; height: 5px; background: var(--gold); transform: rotate(45deg); }
+.title { font-family: 'Cormorant Garamond', serif; font-size: clamp(1.8rem, 5vw, 2.4rem); font-weight: 300; line-height: 1.2; }
+.title em { font-style: italic; color: var(--gold); }
+.subtitle { font-size: 12px; font-weight: 300; color: var(--mid); letter-spacing: 0.07em; margin-top: 0.5rem; line-height: 1.7; }
+
+.screen { display: none; }
+.screen.active { display: block; animation: fadeUp 0.4s ease both; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* LIST */
+.list-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+.list-count { font-size: 12px; letter-spacing: 0.08em; color: var(--mid); font-weight: 300; }
+.btn-add { display: flex; align-items: center; gap: 6px; padding: 9px 20px;
+  background: var(--dark); color: var(--cream); font-family: 'Jost', sans-serif;
+  font-size: 11px; font-weight: 400; letter-spacing: 0.12em; text-transform: uppercase;
+  border: none; cursor: pointer; transition: background 0.2s; }
+.btn-add:hover { background: var(--gold); }
+
+.guest-list { display: flex; flex-direction: column; gap: 8px; }
+
+.guest-item { background: var(--white); border: 0.5px solid var(--border);
+  padding: 1rem 1.25rem; cursor: pointer; transition: border-color 0.2s, transform 0.15s;
+  display: flex; align-items: center; gap: 1rem; }
+.guest-item:hover { border-color: var(--gold-light); transform: translateX(3px); }
+
+.guest-avatar { width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 500; }
+.av-bride { background: #fbeaf0; color: #993556; }
+.av-groom { background: #e6f1fb; color: #185fa5; }
+.av-common { background: #e1f5ee; color: #0f6e56; }
+
+.guest-info { flex: 1; min-width: 0; }
+.guest-name { font-size: 14px; font-weight: 400; }
+.guest-meta { font-size: 12px; color: var(--mid); font-weight: 300; margin-top: 2px; }
+
+.guest-badge { font-size: 10px; letter-spacing: 0.08em; padding: 3px 10px; border: 0.5px solid; flex-shrink: 0; }
+.badge-bride { border-color: #d4a0b5; color: #993556; }
+.badge-groom { border-color: #a0b8d4; color: #185fa5; }
+.badge-common { border-color: #8fcfb8; color: #0f6e56; }
+
+.guest-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.dot-filled { background: var(--gold); }
+.dot-empty { background: rgba(107,90,62,0.2); }
+
+.empty-state { text-align: center; padding: 3rem 1rem; background: var(--white); border: 0.5px dashed var(--border); }
+.empty-state strong { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-weight: 400; display: block; margin-bottom: 0.5rem; }
+.empty-state p { font-size: 13px; color: var(--mid); font-weight: 300; line-height: 1.8; }
+
+.sync-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 1.5rem; flex-wrap: wrap; }
+.btn-sync { padding: 8px 24px; border: 0.5px solid var(--border); background: transparent;
+  font-family: 'Jost', sans-serif; font-size: 11px; letter-spacing: 0.1em; color: var(--mid);
+  text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+.btn-sync:hover { border-color: var(--gold); color: var(--gold); }
+.sync-status { font-size: 11px; color: var(--mid); font-weight: 300; }
+
+/* FORM */
+.form-back { display: flex; align-items: center; gap: 8px; margin-bottom: 1.5rem;
+  background: none; border: none; cursor: pointer; color: var(--mid);
+  font-family: 'Jost', sans-serif; font-size: 12px; letter-spacing: 0.05em; padding: 0; }
+.form-back:hover { color: var(--gold); }
+
+.form-card { background: var(--white); border: 0.5px solid var(--border); padding: 1.75rem; margin-bottom: 1rem; }
+.card-label { font-size: 10px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 10px; }
+.card-label::after { content: ''; flex: 1; height: 0.5px; background: var(--border); }
+
+.field { margin-bottom: 1.25rem; }
+.field:last-child { margin-bottom: 0; }
+.field label { display: block; font-size: 11px; font-weight: 300; letter-spacing: 0.05em; color: var(--mid); margin-bottom: 6px; }
+.field input, .field textarea, .field select {
+  width: 100%; border: none; border-bottom: 0.5px solid rgba(184,149,106,0.4);
+  padding: 8px 0; font-size: 15px; font-family: 'Jost', sans-serif; font-weight: 300;
+  color: var(--dark); background: transparent; outline: none; transition: border-color 0.2s; -webkit-appearance: none; }
+.field input:focus, .field textarea:focus, .field select:focus { border-bottom-color: var(--gold); }
+.field input::placeholder, .field textarea::placeholder { color: rgba(107,90,62,0.35); font-size: 13px; }
+.field textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+.field select { cursor: pointer; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.5rem; }
+
+.form-actions { display: flex; gap: 10px; margin-top: 1.5rem; }
+.btn-save { flex: 1; padding: 13px; background: var(--dark); color: var(--cream);
+  font-family: 'Jost', sans-serif; font-size: 11px; letter-spacing: 0.15em;
+  text-transform: uppercase; border: none; cursor: pointer; transition: background 0.2s; }
+.btn-save:hover { background: var(--gold); }
+.btn-delete { padding: 13px 20px; border: 0.5px solid rgba(184,149,106,0.4); background: transparent;
+  font-family: 'Jost', sans-serif; font-size: 11px; color: var(--mid); letter-spacing: 0.1em;
+  text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+.btn-delete:hover { border-color: rgba(160,48,48,0.4); color: #a03030; }
+
+.save-toast { display: none; text-align: center; padding: 10px; font-size: 12px;
+  color: var(--gold); letter-spacing: 0.05em; margin-top: 0.5rem; }
+.save-toast.show { display: block; animation: fadeUp 0.3s ease both; }
+
+footer { text-align: center; margin-top: 2.5rem; font-size: 11px; color: rgba(107,90,62,0.45); letter-spacing: 0.05em; }
+
+@media (max-width: 480px) {
+  .grid2 { grid-template-columns: 1fr; }
+  .form-card { padding: 1.25rem; }
+  .page { padding: 1.75rem 1rem 3rem; }
+  .form-actions { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="page">
+
+<header>
+  <div class="ornament">
+    <div class="ornament-line"></div>
+    <div class="ornament-diamond"></div>
+    <div class="ornament-line"></div>
+  </div>
+  <h1 class="title">Наші <em>гості</em></h1>
+  <p class="subtitle">Заповніть інформацію про кожного гостя<br>Ця інформація допоможе ведучому зробити свято особливим</p>
+</header>
+
+<!-- LIST -->
+<div id="screen-list" class="screen active">
+  <div class="list-header">
+    <span class="list-count" id="list-count">0 гостей</span>
+    <button class="btn-add" onclick="openForm(null)">+ Додати гостя</button>
+  </div>
+  <div id="guest-list" class="guest-list"></div>
+  <div class="sync-row">
+    <button class="btn-sync" onclick="syncToSheets()">Надіслати ведучому</button>
+    <span class="sync-status" id="sync-status"></span>
+  </div>
+</div>
+
+<!-- FORM -->
+<div id="screen-form" class="screen">
+  <button class="form-back" onclick="backToList()">&#8592; Назад до списку</button>
+
+  <div class="form-card">
+    <div class="card-label">Хто це?</div>
+    <div class="grid2">
+      <div class="field" style="grid-column:1/-1;">
+        <label>Ім'я та прізвище *</label>
+        <input type="text" id="f-name" placeholder="Іванченко Микола Петрович">
+      </div>
+      <div class="field">
+        <label>Гість з боку</label>
+        <select id="f-side">
+          <option value="Нареченої">Нареченої</option>
+          <option value="Нареченого">Нареченого</option>
+          <option value="Спільний">Спільний гість</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Ким доводиться</label>
+        <input type="text" id="f-role" placeholder="Мама, друг, подруга дитинства...">
+      </div>
+      <div class="field">
+        <label>Вік</label>
+        <input type="number" id="f-age" placeholder="35">
+      </div>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div class="card-label">Особиста історія</div>
+    <div class="field">
+      <label>Факти, хобі, особливості, вподобання</label>
+      <textarea id="f-story" placeholder="Людина тиха та сором'язлива, буде випробуванням виступити на публіку. Хобі: серіали-дорами, класична музика, спорт, подорожі..."></textarea>
+    </div>
+    <div class="field">
+      <label>Про що краще не говорити (необов'язково)</label>
+      <textarea id="f-avoid" placeholder="Чутливо ставиться до..." style="min-height:55px;"></textarea>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div class="card-label">Соцмережі та фото</div>
+    <div class="grid2">
+      <div class="field">
+        <label>Instagram</label>
+        <input type="text" id="f-insta" placeholder="@username">
+      </div>
+      <div class="field">
+        <label>Facebook або TikTok</label>
+        <input type="text" id="f-fb" placeholder="facebook.com/...">
+      </div>
+      <div class="field" style="grid-column:1/-1;">
+        <label>Фото (якщо у гостя немає соцмереж — надайте посилання на фото)</label>
+        <input type="text" id="f-photo" placeholder="https://drive.google.com/...">
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button class="btn-save" id="btn-save" onclick="saveGuest()">Зберегти</button>
+    <button class="btn-delete" id="btn-delete" onclick="deleteGuest()" style="display:none;">Видалити</button>
+  </div>
+  <div class="save-toast" id="save-toast">Збережено ✓</div>
+</div>
+
+<footer>Форма для ведучого · Всі дані конфіденційні</footer>
+</div>
+
+<script>
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbxvk2v8-fNcbEVMU2VSsxalntBc1aip53vnM9pQMA2YRLEgXd7Cd1n8Pij2yk5epNld/exec';
+const KEY = 'wedding_guests_v2';
+
+let guests = JSON.parse(localStorage.getItem(KEY) || '[]');
+let editingId = null;
+
+function persist() { localStorage.setItem(KEY, JSON.stringify(guests)); }
+
+function initials(name) {
+  return (name || '?').split(' ').filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2);
+}
+function avClass(s) { return s === 'Нареченої' ? 'av-bride' : s === 'Нареченого' ? 'av-groom' : 'av-common'; }
+function badgeClass(s) { return s === 'Нареченої' ? 'badge-bride' : s === 'Нареченого' ? 'badge-groom' : 'badge-common'; }
+function isFilled(g) { return !!(g.story || g.insta || g.fb || g.photo); }
+
+function renderList() {
+  const el = document.getElementById('guest-list');
+  const n = guests.length;
+  document.getElementById('list-count').textContent = n === 0 ? 'Гостей ще немає' : n === 1 ? '1 гість' : `${n} гостей`;
+  if (!n) {
+    el.innerHTML = `<div class="empty-state"><strong>Список порожній</strong><p>Натисніть "+ Додати гостя",<br>щоб почати заповнювати список</p></div>`;
+    return;
+  }
+  el.innerHTML = guests.map(g => `
+    <div class="guest-item" onclick="openForm('${g.id}')">
+      <div class="guest-avatar ${avClass(g.side)}">${initials(g.name)}</div>
+      <div class="guest-info">
+        <div class="guest-name">${g.name || 'Без імені'}</div>
+        <div class="guest-meta">${g.role || '—'}${g.age ? ' · ' + g.age + ' р.' : ''}</div>
+      </div>
+      <span class="guest-badge ${badgeClass(g.side)}">${g.side}</span>
+      <div class="guest-dot ${isFilled(g) ? 'dot-filled' : 'dot-empty'}" title="${isFilled(g) ? 'Заповнено' : 'Потребує заповнення'}"></div>
+    </div>`).join('');
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function openForm(id) {
+  editingId = id;
+  const g = id ? guests.find(x => x.id === id) : null;
+  document.getElementById('f-name').value = g?.name || '';
+  document.getElementById('f-side').value = g?.side || 'Нареченої';
+  document.getElementById('f-role').value = g?.role || '';
+  document.getElementById('f-age').value = g?.age || '';
+  document.getElementById('f-story').value = g?.story || '';
+  document.getElementById('f-avoid').value = g?.avoid || '';
+  document.getElementById('f-insta').value = g?.insta || '';
+  document.getElementById('f-fb').value = g?.fb || '';
+  document.getElementById('f-photo').value = g?.photo || '';
+  document.getElementById('btn-delete').style.display = id ? '' : 'none';
+  document.getElementById('btn-save').textContent = id ? 'Зберегти зміни' : 'Додати гостя';
+  document.getElementById('save-toast').classList.remove('show');
+  showScreen('screen-form');
+}
+
+function saveGuest() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { document.getElementById('f-name').focus(); return; }
+  const data = {
+    id: editingId || Date.now().toString(),
+    name,
+    side: document.getElementById('f-side').value,
+    role: document.getElementById('f-role').value.trim(),
+    age: document.getElementById('f-age').value.trim(),
+    story: document.getElementById('f-story').value.trim(),
+    avoid: document.getElementById('f-avoid').value.trim(),
+    insta: document.getElementById('f-insta').value.trim(),
+    fb: document.getElementById('f-fb').value.trim(),
+    photo: document.getElementById('f-photo').value.trim()
+  };
+  if (editingId) {
+    const i = guests.findIndex(g => g.id === editingId);
+    if (i !== -1) guests[i] = data;
+  } else {
+    guests.push(data);
+    editingId = data.id;
+  }
+  persist();
+  document.getElementById('btn-save').textContent = 'Зберегти зміни';
+  document.getElementById('btn-delete').style.display = '';
+  const t = document.getElementById('save-toast');
+  t.classList.remove('show');
+  setTimeout(() => t.classList.add('show'), 10);
+}
+
+function deleteGuest() {
+  if (!editingId || !confirm('Видалити цього гостя?')) return;
+  guests = guests.filter(g => g.id !== editingId);
+  persist();
+  backToList();
+}
+
+function backToList() { renderList(); showScreen('screen-list'); }
+
+async function syncToSheets() {
+  const st = document.getElementById('sync-status');
+  if (!guests.length) { st.textContent = 'Список порожній'; return; }
+  st.textContent = 'Надсилаю...';
+  let ok = 0;
+  for (const g of guests) {
+    try {
+      await fetch(SHEET_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(g) });
+      ok++;
+    } catch(e) {}
+  }
+  st.textContent = `Надіслано ${ok} з ${guests.length} гостей ✓`;
+  setTimeout(() => st.textContent = '', 5000);
+}
+
+renderList();
+</script>
+</body>
+</html>
